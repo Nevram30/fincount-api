@@ -2,6 +2,7 @@
 FastAPI Main Application
 This is the entry point for the Fincount API backend
 """
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
@@ -35,9 +36,10 @@ app.add_middleware(
 async def startup_event():
     """Create database tables on startup"""
     init_db()
+    port = os.environ.get("PORT", "8000")
     print("✅ Database initialized successfully")
-    print("🚀 Server is running at http://localhost:8000")
-    print("📚 API Documentation at http://localhost:8000/docs")
+    print(f"🚀 Server is running on port {port}")
+    print(f" API Documentation at /docs")
 
 # Include routers
 app.include_router(router_auth.router, prefix="/api/auth", tags=["Authentication"])
@@ -64,11 +66,11 @@ async def health_check():
 
 if __name__ == "__main__":
     # Run the server
-    # Access at: http://localhost:8000
-    # API docs at: http://localhost:8000/docs
+    # Railway provides PORT via environment variable
+    port = int(os.environ.get("PORT", 8000))
     uvicorn.run(
         "main:app",
         host="0.0.0.0",  # Allows external connections
-        port=8000,
+        port=port,  # Use Railway's dynamic PORT
         reload=True  # Auto-reload on code changes (development only)
     )
