@@ -6,6 +6,7 @@ hypercorn==0.18.0
 # Authentication
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
 
 # Database
 sqlalchemy==2.0.44
@@ -19,8 +20,8 @@ python-dotenv==1.0.0
 pydantic-settings==2.1.0
 
 # Database Drivers (choose one based on your database)
-# PostgreSQL
-# psycopg2-binary==2.9.9
+# PostgreSQL (Required for Railway)
+psycopg2-binary>=2.9.9
 
 # MySQL
 # pymysql==1.1.0

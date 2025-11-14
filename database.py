@@ -1,24 +1,29 @@
 """
 Database configuration and session management
 """
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-# Database URL - Change this based on your database
-# SQLite (for development/testing)
-SQLALCHEMY_DATABASE_URL = "sqlite:///./fincount.db"
+# Get DATABASE_URL from environment variable (Railway provides this)
+# Falls back to SQLite for local development
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./fincount.db")
 
-# PostgreSQL (for production)
-# SQLALCHEMY_DATABASE_URL = "postgresql://user:password@localhost/fincount"
+# Railway uses postgres:// but SQLAlchemy needs postgresql://
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# MySQL (for production)
-# SQLALCHEMY_DATABASE_URL = "mysql+pymysql://user:password@localhost/fincount"
+SQLALCHEMY_DATABASE_URL = DATABASE_URL
 
-# Create engine
+# Create engine with appropriate settings
+connect_args = {}
+if "sqlite" in SQLALCHEMY_DATABASE_URL:
+    connect_args = {"check_same_thread": False}
+
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False} if "sqlite" in SQLALCHEMY_DATABASE_URL else {}
+    connect_args=connect_args
 )
 
 # Create SessionLocal class
