@@ -48,16 +48,16 @@ async def get_batches(
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=BatchResponse)
 async def create_batch(
     batch_data: BatchCreate,
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """
-    Create a new batch
+    Create a new batch (No authentication required)
     """
+    # Use a default user_id or make it optional
     new_batch = Batch(
         name=batch_data.name,
         description=batch_data.description,
-        user_id=current_user["sub"],
+        user_id="anonymous",  # Default user for unauthenticated requests
         is_active=batch_data.isActive
     )
     

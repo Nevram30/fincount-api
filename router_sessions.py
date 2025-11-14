@@ -54,15 +54,14 @@ async def get_sessions(
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=SessionCreateResponse)
 async def create_session(
     session_data: SessionCreate,
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """
-    Create a new counting session
+    Create a new counting session (No authentication required)
     """
     new_session = SessionModel(
         batch_id=session_data.batchId,
-        user_id=current_user["sub"],
+        user_id="anonymous",  # Default user for unauthenticated requests
         species=session_data.species,
         location=session_data.location,
         notes=session_data.notes,
