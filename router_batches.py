@@ -28,15 +28,12 @@ def batch_to_dict(batch: Batch) -> dict:
 
 @router.get("", response_model=BatchListResponse)
 async def get_batches(
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """
-    Get all batches for the current user
+    Get all batches (No authentication required)
     """
-    batches = db.query(Batch).filter(
-        Batch.user_id == current_user["sub"]
-    ).all()
+    batches = db.query(Batch).all()
     
     batches_list = [batch_to_dict(b) for b in batches]
     
