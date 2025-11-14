@@ -41,7 +41,9 @@ class BatchBase(BaseModel):
     isActive: bool = True
 
 class BatchCreate(BatchBase):
-    pass
+    # Allow extra fields from Flutter app but ignore them
+    class Config:
+        extra = "ignore"
 
 class BatchUpdate(BaseModel):
     name: Optional[str] = None
@@ -71,7 +73,9 @@ class SessionBase(BaseModel):
     imageUrl: str
 
 class SessionCreate(SessionBase):
-    pass
+    # Allow extra fields from Flutter app but ignore them
+    class Config:
+        extra = "ignore"
 
 class SessionUpdate(BaseModel):
     species: Optional[str] = None
