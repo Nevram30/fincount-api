@@ -53,11 +53,11 @@ async def create_batch(
     """
     Create a new batch (No authentication required)
     """
-    # Use a default user_id or make it optional
+    # Use admin user ID for unauthenticated requests
     new_batch = Batch(
         name=batch_data.name,
         description=batch_data.description,
-        user_id="anonymous",  # Default user for unauthenticated requests
+        user_id="fa1c3896-50a9-41b8-a573-a4c9dc1266bf",  # Admin user ID
         is_active=batch_data.isActive
     )
     

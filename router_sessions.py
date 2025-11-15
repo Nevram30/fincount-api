@@ -61,7 +61,7 @@ async def create_session(
     """
     new_session = SessionModel(
         batch_id=session_data.batchId,
-        user_id="anonymous",  # Default user for unauthenticated requests
+        user_id="fa1c3896-50a9-41b8-a573-a4c9dc1266bf",  # Admin user ID
         species=session_data.species,
         location=session_data.location,
         notes=session_data.notes,
