@@ -58,7 +58,24 @@ async def create_session(
 ):
     """
     Create a new counting session (No authentication required)
+    Auto-creates batch if it doesn't exist
     """
+    from models import Batch
+    
+    # Check if batch exists, if not create it
+    batch = db.query(Batch).filter(Batch.id == session_data.batchId).first()
+    if not batch:
+        # Create batch with the ID from Flutter
+        batch = Batch(
+            id=session_data.batchId,
+            name=f"Auto-created batch {session_data.batchId[:8]}",
+            description="Automatically created from session",
+            user_id="fa1c3896-50a9-41b8-a573-a4c9dc1266bf",
+            is_active=True
+        )
+        db.add(batch)
+        db.commit()
+    
     new_session = SessionModel(
         batch_id=session_data.batchId,
         user_id="fa1c3896-50a9-41b8-a573-a4c9dc1266bf",  # Admin user ID
