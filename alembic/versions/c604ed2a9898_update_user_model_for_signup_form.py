@@ -19,25 +19,39 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    # Get connection to check existing columns
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    columns = [col['name'] for col in inspector.get_columns('users')]
+    
     # SQLite doesn't support ALTER COLUMN, so we need to use batch operations
     with op.batch_alter_table('users', schema=None) as batch_op:
-        # Add new columns
-        batch_op.add_column(sa.Column('full_name', sa.String(), nullable=False))
-        batch_op.add_column(sa.Column('username', sa.String(), nullable=False))
-        batch_op.add_column(sa.Column('user_type', sa.String(), nullable=False))
+        # Add new columns only if they don't exist
+        if 'full_name' not in columns:
+            batch_op.add_column(sa.Column('full_name', sa.String(), nullable=False))
+        if 'username' not in columns:
+            batch_op.add_column(sa.Column('username', sa.String(), nullable=False))
+        if 'user_type' not in columns:
+            batch_op.add_column(sa.Column('user_type', sa.String(), nullable=False))
         
-        # Create index on username
-        batch_op.create_index(batch_op.f('ix_users_username'), ['username'], unique=True)
+        # Create index on username if it doesn't exist
+        indexes = [idx['name'] for idx in inspector.get_indexes('users')]
+        if 'ix_users_username' not in indexes:
+            batch_op.create_index(batch_op.f('ix_users_username'), ['username'], unique=True)
         
         # Drop old columns and index (if they exist)
-        try:
-            batch_op.drop_index('ix_users_email')
-        except:
-            pass  # Index might not exist
+        if 'ix_users_email' in indexes:
+            try:
+                batch_op.drop_index('ix_users_email')
+            except:
+                pass  # Index might not exist
         
-        batch_op.drop_column('email')
-        batch_op.drop_column('name')
-        batch_op.drop_column('role')
+        if 'email' in columns:
+            batch_op.drop_column('email')
+        if 'name' in columns:
+            batch_op.drop_column('name')
+        if 'role' in columns:
+            batch_op.drop_column('role')
 
 
 def downgrade() -> None:
