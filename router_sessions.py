@@ -4,11 +4,17 @@ Sessions router - handles CRUD operations for counting sessions
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
+import logging
+import traceback
 
 from database import get_db
 from models import Session as SessionModel
 from schemas import SessionCreate, SessionUpdate, SessionResponse, SessionListResponse, SessionCreateResponse
 from auth import get_current_user
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -60,42 +66,75 @@ async def create_session(
     Create a new counting session (No authentication required)
     Auto-creates batch if it doesn't exist
     """
-    from models import Batch
-    
-    # Check if batch exists, if not create it
-    batch = db.query(Batch).filter(Batch.id == session_data.batchId).first()
-    if not batch:
-        # Create batch with the ID from Flutter
-        batch = Batch(
-            id=session_data.batchId,
-            name=f"Auto-created batch {session_data.batchId[:8]}",
-            description="Automatically created from session",
-            user_id="fa1c3896-50a9-41b8-a573-a4c9dc1266bf",
-            is_active=True
+    try:
+        logger.info(f"=== Session Creation Request ===")
+        logger.info(f"Batch ID: {session_data.batchId}")
+        logger.info(f"Species: {session_data.species}")
+        logger.info(f"Location: {session_data.location}")
+        logger.info(f"Counts: {session_data.counts}")
+        logger.info(f"Timestamp: {session_data.timestamp}")
+        
+        from models import Batch
+        
+        # Check if batch exists, if not create it
+        batch = db.query(Batch).filter(Batch.id == session_data.batchId).first()
+        if not batch:
+            logger.info(f"Creating new batch: {session_data.batchId}")
+            # Create batch with the ID from Flutter
+            batch = Batch(
+                id=session_data.batchId,
+                name=f"Auto-created batch {session_data.batchId[:8]}",
+                description="Automatically created from session",
+                user_id="fa1c3896-50a9-41b8-a573-a4c9dc1266bf",
+                is_active=True
+            )
+            db.add(batch)
+            db.commit()
+            logger.info(f"✓ Batch created successfully")
+        else:
+            logger.info(f"✓ Using existing batch: {batch.id}")
+        
+        logger.info("Creating session...")
+        new_session = SessionModel(
+            batch_id=session_data.batchId,
+            user_id="fa1c3896-50a9-41b8-a573-a4c9dc1266bf",  # Admin user ID
+            species=session_data.species.value,  # Get enum value
+            location=session_data.location.value,  # Get enum value
+            notes=session_data.notes,
+            counts=session_data.counts,
+            timestamp=session_data.timestamp,
+            image_url=session_data.imageUrl
         )
-        db.add(batch)
+        
+        db.add(new_session)
         db.commit()
-    
-    new_session = SessionModel(
-        batch_id=session_data.batchId,
-        user_id="fa1c3896-50a9-41b8-a573-a4c9dc1266bf",  # Admin user ID
-        species=session_data.species,
-        location=session_data.location,
-        notes=session_data.notes,
-        counts=session_data.counts,
-        timestamp=session_data.timestamp,
-        image_url=session_data.imageUrl
-    )
-    
-    db.add(new_session)
-    db.commit()
-    db.refresh(new_session)
-    
-    return {
-        "success": True,
-        "data": session_to_dict(new_session),
-        "message": "Session created successfully"
-    }
+        db.refresh(new_session)
+        
+        logger.info(f"✓ Session created successfully: {new_session.id}")
+        logger.info(f"  Species: {new_session.species}")
+        logger.info(f"  Location: {new_session.location}")
+        
+        return {
+            "success": True,
+            "data": session_to_dict(new_session),
+            "message": "Session created successfully"
+        }
+        
+    except ValueError as e:
+        logger.error(f"❌ Validation Error: {str(e)}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"❌ Session Creation Error: {str(e)}")
+        logger.error(f"Error Type: {type(e).__name__}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create session: {str(e)}"
+        )
 
 
 @router.get("/batch/{batch_id}", response_model=List[SessionResponse])

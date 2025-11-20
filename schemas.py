@@ -2,9 +2,23 @@
 Pydantic schemas for request/response validation
 These match the Flutter app's data models
 """
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, validator
 from datetime import datetime
 from typing import Optional, Dict
+from enum import Enum
+
+
+# ============= Enums for Validation =============
+
+class SpeciesEnum(str, Enum):
+    """Valid fish species"""
+    TILAPIA = "Tilapia"
+    BANGUS = "Bangus (Milkfish)"
+
+class LocationEnum(str, Enum):
+    """Valid pond locations"""
+    CAGANGOHAN = "Cagangohan"
+    SOUTHERN = "Southern"
 
 # ============= User Schemas =============
 
@@ -73,12 +87,36 @@ class BatchResponse(BatchBase):
 
 class SessionBase(BaseModel):
     batchId: str
-    species: str
-    location: str
+    species: SpeciesEnum  # Validated against enum
+    location: LocationEnum  # Validated against enum
     notes: str
-    counts: Dict[str, int]  # e.g., {"alive": 100, "dead": 5}
+    counts: Dict[str, int]  # e.g., {"Fish": 100}
     timestamp: str
     imageUrl: str
+    
+    @validator('species', pre=True)
+    def validate_species(cls, v):
+        """Validate species against allowed values"""
+        if isinstance(v, str):
+            # Try to match the string to enum
+            try:
+                return SpeciesEnum(v)
+            except ValueError:
+                valid_values = [e.value for e in SpeciesEnum]
+                raise ValueError(f"Invalid species '{v}'. Must be one of: {', '.join(valid_values)}")
+        return v
+    
+    @validator('location', pre=True)
+    def validate_location(cls, v):
+        """Validate location against allowed values"""
+        if isinstance(v, str):
+            # Try to match the string to enum
+            try:
+                return LocationEnum(v)
+            except ValueError:
+                valid_values = [e.value for e in LocationEnum]
+                raise ValueError(f"Invalid location '{v}'. Must be one of: {', '.join(valid_values)}")
+        return v
 
 class SessionCreate(SessionBase):
     # Allow extra fields from Flutter app but ignore them
