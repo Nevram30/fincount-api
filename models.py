@@ -19,10 +19,10 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(String, primary_key=True, default=generate_uuid)
-    email = Column(String, unique=True, index=True, nullable=False)
-    name = Column(String, nullable=False)
+    full_name = Column(String, nullable=False)
+    username = Column(String, unique=True, index=True, nullable=False)
+    user_type = Column(String, nullable=False)  # "Admin" or "Staff"
     hashed_password = Column(String, nullable=False)
-    role = Column(String, default="user")
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

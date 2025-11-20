@@ -9,23 +9,31 @@ from typing import Optional, Dict
 # ============= User Schemas =============
 
 class UserBase(BaseModel):
-    email: EmailStr
-    name: str
+    full_name: str
+    username: str
+    user_type: str  # "Admin" or "Staff"
 
 class UserCreate(UserBase):
     password: str
+    confirm_password: str
+    
+    def validate_passwords(self):
+        """Validate that passwords match"""
+        if self.password != self.confirm_password:
+            raise ValueError("Passwords do not match")
+        return self
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    username: str
     password: str
 
 class UserUpdate(BaseModel):
-    email: Optional[EmailStr] = None
-    name: Optional[str] = None
+    full_name: Optional[str] = None
+    username: Optional[str] = None
+    user_type: Optional[str] = None
 
 class UserResponse(UserBase):
     id: str
-    role: Optional[str] = "user"
     createdAt: datetime
     updatedAt: Optional[datetime] = None
 

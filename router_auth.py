@@ -24,19 +24,19 @@ async def login(credentials: UserLogin, db: Session = Depends(get_db)):
     """
     Login endpoint - authenticates user and returns JWT token
     """
-    # Find user by email
-    user = db.query(User).filter(User.email == credentials.email).first()
+    # Find user by username
+    user = db.query(User).filter(User.username == credentials.username).first()
     
     if not user or not verify_password(credentials.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password"
+            detail="Incorrect username or password"
         )
     
     # Create access token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.id, "email": user.email},
+        data={"sub": user.id, "username": user.username},
         expires_delta=access_token_expires
     )
     
@@ -45,9 +45,9 @@ async def login(credentials: UserLogin, db: Session = Depends(get_db)):
         "token": access_token,
         "user": {
             "id": user.id,
-            "email": user.email,
-            "name": user.name,
-            "role": user.role,
+            "full_name": user.full_name,
+            "username": user.username,
+            "user_type": user.user_type,
             "createdAt": user.created_at,
             "updatedAt": user.updated_at
         }
@@ -59,19 +59,34 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     """
     Register endpoint - creates new user account
     """
-    # Check if user already exists
-    existing_user = db.query(User).filter(User.email == user_data.email).first()
+    # Validate passwords match
+    if user_data.password != user_data.confirm_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Passwords do not match"
+        )
+    
+    # Validate user_type
+    if user_data.user_type not in ["Admin", "Staff"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User type must be either 'Admin' or 'Staff'"
+        )
+    
+    # Check if username already exists
+    existing_user = db.query(User).filter(User.username == user_data.username).first()
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+            detail="Username already registered"
         )
     
     # Create new user
     hashed_password = get_password_hash(user_data.password)
     new_user = User(
-        email=user_data.email,
-        name=user_data.name,
+        full_name=user_data.full_name,
+        username=user_data.username,
+        user_type=user_data.user_type,
         hashed_password=hashed_password
     )
     
@@ -82,7 +97,7 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     # Generate token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": new_user.id, "email": new_user.email},
+        data={"sub": new_user.id, "username": new_user.username},
         expires_delta=access_token_expires
     )
     
@@ -91,9 +106,9 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
         "token": access_token,
         "user": {
             "id": new_user.id,
-            "email": new_user.email,
-            "name": new_user.name,
-            "role": new_user.role,
+            "full_name": new_user.full_name,
+            "username": new_user.username,
+            "user_type": new_user.user_type,
             "createdAt": new_user.created_at,
             "updatedAt": new_user.updated_at
         }
