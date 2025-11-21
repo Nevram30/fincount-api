@@ -71,9 +71,9 @@ async def get_current_user(
     try:
         payload = decode_access_token(token)
         user_id: str = payload.get("sub")
-        email: str = payload.get("email")
+        username: str = payload.get("username")
         
-        if user_id is None or email is None:
+        if user_id is None or username is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Could not validate credentials",
@@ -96,7 +96,7 @@ async def get_current_user(
     
     return {
         "id": user.id,
-        "email": user.email,
-        "name": user.name,
-        "role": user.role
+        "username": user.username,
+        "fullName": user.full_name,
+        "userType": user.user_type
     }

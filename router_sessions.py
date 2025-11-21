@@ -81,7 +81,7 @@ async def create_session(
         user_id = session_data.userId
         if not user_id:
             # Use the first admin user as default
-            default_user = db.query(User).filter(User.role == "admin").first()
+            default_user = db.query(User).filter(User.user_type == "Admin").first()
             if not default_user:
                 # Fallback to any user
                 default_user = db.query(User).first()
@@ -103,7 +103,7 @@ async def create_session(
                 detail=f"User with id '{user_id}' not found. Please ensure the user exists in the database."
             )
         
-        logger.info(f"✓ User validated: {user.email} ({user.role})")
+        logger.info(f"✓ User validated: {user.username} ({user.user_type})")
         
         # Check if batch exists, if not create it
         batch = db.query(Batch).filter(Batch.id == session_data.batchId).first()
