@@ -65,6 +65,7 @@ async def create_session(
     """
     Create a new counting session (No authentication required)
     Auto-creates batch if it doesn't exist
+    Validates that user exists before creating session/batch
     """
     try:
         logger.info(f"=== Session Creation Request ===")
@@ -74,30 +75,58 @@ async def create_session(
         logger.info(f"Counts: {session_data.counts}")
         logger.info(f"Timestamp: {session_data.timestamp}")
         
-        from models import Batch
+        from models import Batch, User
+        
+        # Get user_id from request or use default admin user
+        user_id = session_data.userId
+        if not user_id:
+            # Use the first admin user as default
+            default_user = db.query(User).filter(User.role == "admin").first()
+            if not default_user:
+                # Fallback to any user
+                default_user = db.query(User).first()
+            if not default_user:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="No users found in database. Please create a user first."
+                )
+            user_id = default_user.id
+            logger.info(f"No userId provided, using default admin: {user_id}")
+        else:
+            logger.info(f"Using provided userId: {user_id}")
+        
+        # Validate that user exists
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"User with id '{user_id}' not found. Please ensure the user exists in the database."
+            )
+        
+        logger.info(f"✓ User validated: {user.email} ({user.role})")
         
         # Check if batch exists, if not create it
         batch = db.query(Batch).filter(Batch.id == session_data.batchId).first()
         if not batch:
             logger.info(f"Creating new batch: {session_data.batchId}")
-            # Create batch with the ID from Flutter
+            # Create batch with validated user_id
             batch = Batch(
                 id=session_data.batchId,
                 name=f"Auto-created batch {session_data.batchId[:8]}",
                 description="Automatically created from session",
-                user_id="fa1c3896-50a9-41b8-a573-a4c9dc1266bf",
+                user_id=user_id,  # Use validated user_id
                 is_active=True
             )
             db.add(batch)
             db.commit()
-            logger.info(f"✓ Batch created successfully")
+            logger.info(f"✓ Batch created successfully with user_id: {user_id}")
         else:
             logger.info(f"✓ Using existing batch: {batch.id}")
         
         logger.info("Creating session...")
         new_session = SessionModel(
             batch_id=session_data.batchId,
-            user_id="fa1c3896-50a9-41b8-a573-a4c9dc1266bf",  # Admin user ID
+            user_id=user_id,  # Use validated user_id
             species=session_data.species.value,  # Get enum value
             location=session_data.location.value,  # Get enum value
             notes=session_data.notes,
@@ -111,6 +140,7 @@ async def create_session(
         db.refresh(new_session)
         
         logger.info(f"✓ Session created successfully: {new_session.id}")
+        logger.info(f"  User ID: {new_session.user_id}")
         logger.info(f"  Species: {new_session.species}")
         logger.info(f"  Location: {new_session.location}")
         

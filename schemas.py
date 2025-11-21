@@ -93,6 +93,7 @@ class SessionBase(BaseModel):
     counts: Dict[str, int]  # e.g., {"Fish": 100}
     timestamp: str
     imageUrl: str
+    userId: Optional[str] = None  # Optional user ID, will use default admin if not provided
     
     @validator('species', pre=True)
     def validate_species(cls, v):
