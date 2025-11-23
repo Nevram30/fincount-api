@@ -224,15 +224,13 @@ async def update_session(
 @router.delete("/{session_id}")
 async def delete_session(
     session_id: str,
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """
-    Delete a session
+    Delete a session (No authentication required)
     """
     session = db.query(SessionModel).filter(
-        SessionModel.id == session_id,
-        SessionModel.user_id == current_user["sub"]
+        SessionModel.id == session_id
     ).first()
     
     if not session:
